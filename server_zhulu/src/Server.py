@@ -123,7 +123,7 @@ class Server:
 			for v in force_list:
 				self.send_queue[v].put(msg, 1)
 				print 'send msg %s to %d: ' % (msg, v)
-		if isinstance(force_list, int):		#若force_list是单个国家
+		elif isinstance(force_list, int):		#若force_list是单个国家
 			self.send_queue[force_list].put(msg, 1)
 			print 'send msg %s to %d: ' % (msg, force_list)
 	
@@ -131,18 +131,19 @@ class Server:
 	# @param cmd, 类型：字符串, 内容：命令, eg:'LOGIN'
 	# @param data_list, 类型：任意int、float、str或它们的数组, 内容：数据, eg:'nickname'或['nickname','xiaoming']
 	def encode_msg(self, cmd, data_list):
-		temp_data = copy.deepcopy(data_list)
+		temp_data = []
 		if isinstance(temp_data, list):		#若data_list是数据列表
-			for idx, item in enumerate(temp_data):
-				temp_data[idx] = str(item)	# 将数据转化为str型
+			for item in data_list:
+				temp_data.append(str(item)) # 将数据转化为str型
 			temp_data = ','.join(temp_data)
 			return cmd + '#' + temp_data + ';'
-		if isinstance(temp_data, str):		#若data_list是单个字符串数据
+		elif isinstance(temp_data, str):		#若data_list是单个字符串数据
 			temp_data = str(temp_data)
 			return cmd + '#' + temp_data + ';'
 	
 	## 接收信息并解码。返回解码值，如果多条消息粘连，将第一条之后的消息按原格式放回消息队列recv_queue中。
 	# @return: force(int), cmd(str), data(str)
+	# note:此处有！！！！隐患！！！！！粘连消息处理有点问题，建议使用buffer队列缓冲粘连消息。
 	def recv_msg(self):
 		try:
 			raw_data = self.recv_queue.get(1)	# 从消息队列中取消息
@@ -296,7 +297,7 @@ class Server:
 				if len(self.conn_list) < 4:		# 玩家人数少于4
 					conn, addr = self.sock.accept()		# 持续监听连接
 					print 'Connected with ' + addr[0] + ':' + str(addr[1])
-					self.conn_list[conn] = self.rand_force.pop()	# 有新连接，给分配国家号
+					self.conn_list[conn] = self.rand_force.pop()	# 有新连接，给随机分配国家号
 					threading.Thread(target = self.recv_data, args = (conn, )).start()	# 开收消息线程
 					threading.Thread(target = self.send_data, args = (conn, )).start()	# 开发消息线程
 					force, cmd, data = self.recv_msg()		# 接收登录消息
@@ -315,7 +316,7 @@ class Server:
 				self.game_init()	# game初始化
 				for force in [Yan, Qi, Qin, Chu]:
 					msg_to_send = self.encode_msg('ALLOC',[force,self.nickname_list[Yan],self.nickname_list[Qi],self.nickname_list[Qin],self.nickname_list[Chu]])
-					self.send_msg(msg_to_send,force)		# 广播每个玩家的势力分配情况
+					self.send_msg(msg_to_send,force)		# 单播每个玩家的势力分配情况
 				done_list = []		# 存储收到的DONE#init消息
 				while len(done_list) < 4:	# 不够4个，持续接收
 					force, cmd, data = self.recv_msg()
