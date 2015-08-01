@@ -60,7 +60,7 @@ class Server:
 		# 玩家turn顺序表，存势力号900,901...
 		self.turn_list = []
 
-		# 当前turn，存势力号900等,eg. 900
+		# 当前turn，存势力号900等
 		self.current_turn = 0
 		self.next_turn = 0
 		# 标记当前round
@@ -132,13 +132,13 @@ class Server:
 	# @param data_list, 类型：任意int、float、str或它们的数组, 内容：数据, eg:'nickname'或['nickname','xiaoming']
 	def encode_msg(self, cmd, data_list):
 		temp_data = []
-		if isinstance(data_list, list):		#若data_list是数据列表
+		if isinstance(temp_data, list):		#若data_list是数据列表
 			for item in data_list:
 				temp_data.append(str(item)) # 将数据转化为str型
 			temp_data = ','.join(temp_data)
 			return cmd + '#' + temp_data + ';'
-		elif isinstance(data_list, str):		#若data_list是单个字符串数据
-			temp_data = str(data_list)
+		elif isinstance(temp_data, str):		#若data_list是单个字符串数据
+			temp_data = str(temp_data)
 			return cmd + '#' + temp_data + ';'
 	
 	## 接收信息并解码。返回解码值，如果多条消息粘连，将第一条之后的消息按原格式放回消息队列recv_queue中。
@@ -155,7 +155,7 @@ class Server:
 				print self.recv_queue
 			force, msg = data_list[0].split('$')	# 解码第一条消息
 			force = int(force)
-			cmd, data = msg.split('#')			# force, cmd, data分别为势力，指令，数据。
+			cmd, data = msg.split('#')				# force, cmd, data分别为势力，指令，数据。
 			# data = data.split(',') 				# type(data) == list
 			# # 若data中只有一个str，则将data转化为str类型，否则保留为list类型
 			# if 1 == len(data):
@@ -404,68 +404,6 @@ class Server:
 							self.players_list[force].ap = int(self.players_list[force].ap)
 							max_ap = 0 						# 临时变量max_ap和march_dic清空
 							march_dic = {}
-
-						elif cmd == 'GUARD':		#防守指令
-							print 'GUARD action'
-							player = self.players_list[force]		#确定此次防守指令的玩家
-							dst = int(data)		#此次防守的位置
-							#判断防守的dst是否在该玩家拥有地块list中
-							#行动点>1才可设置防守
-							if (dst in player.lands) & (player.ap >= 1):
-								print 'guard legal'
-								player.map.id2land[dst].is_defend = True    #标记此dst的防守状态label为True
-								player.ap -= 1           #消耗1个行动点
-								msg_to_send = self.encode_msg('UPDATE', [force, int(player.ap), 'GUARD', dst])
-								self.broadcast(msg_to_send)
-							else:
-								print 'guard illegal'
-								msg_to_send = self.encode_msg('ILLEGAL', ['GUARD', dst])
-								self.send_msg(msg_to_send, force)
-
-
-						elif cmd == 'BUILD':		#建仓指令
-							print 'BUILD action'
-							player = self.players_list[force]		#确定此次建仓指令的玩家
-							dst = int(data)		#此次建仓的位置
-							#计算建仓消耗粮食数量
-							#首次建仓不消耗粮食，非首次建仓消耗3个粮食
-							if player.is_first_barn:
-								grain_cost = 0
-								player.is_first_barn = False
-							else:
-								grain_cost = 3
-								player.is_first_barn = False
-
-							#判断建仓的dst是否在该玩家拥有地块list中，并且不是城市
-							#行动点>1才可建仓，并且玩家粮食数目足够建仓
-							if (dst in player.lands) & (player.map.id2land[dst].type != 3) & (player.ap >= 1) & (player.grain >= grain_cost):
-								print 'build legal'
-								player.map.id2land[dst].is_barn = True    #标记此dst的建仓状态label为True
-								player.ap -= 1           #消耗1个行动点
-								player.grain -= grain_cost  #建仓消耗粮食数量
-								msg_to_send = self.encode_msg('UPDATE', [force, int(player.ap), 'BUILD', dst])
-								self.broadcast(msg_to_send)
-							else:
-								print 'build illegal'
-								msg_to_send = self.encode_msg('ILLEGAL', ['BUILD', dst])
-								self.send_msg(msg_to_send, force)
-
-						elif cmd == 'RECRUIT':		#征兵指令
-							print 'RECRUIT action'
-							player = self.players_list[force]		#确定此次征兵指令的玩家
-							dst = int(data)		#此次征兵的位置
-							#判断征兵的dst是否在该玩家拥有地块list中，并且是城市
-							#行动点>1才可设置征兵
-							if (dst in player.lands) & (player.map.id2land[dst].type == 3) & (player.ap >= 1):
-								print 'recruit legal'
-								player.map.id2land[dst].is_recruit = True    #标记此dst的征兵状态label为True
-								player.ap -= 1           #消耗1个行动点
-								msg_to_send = self.encode_msg('UPDATE', [force, int(player.ap), 'RECRUIT', dst])
-								self.broadcast(msg_to_send)
-							else:
-								print 'recruit illegal'
-								msg_to_send = self.encode_msg('ILLEGAL', ['RECRUIT', dst])
-								self.send_msg(msg_to_send, force)
 
 						elif 'DONE' == cmd and 'turn' == data:
 							print "DONE turn"

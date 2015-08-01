@@ -37,10 +37,9 @@ class Land(Owner):
 		self.is_barn = False
 		# whether the land is capital or not.
 		self.is_capital = False
-		# whether the land is defend or not
-		self.is_defend = False
-		# whether the land is recruit or not
-		self.is_recruit = False
+		# the deployment variable is used to hold the deployments: defend or recruit.
+		self.deployment = []
+		
 
 
 	## The str method of the class. The form of the text information will like that: Land$ ID:1, owner:gao, type:plain1, soldiers:0
